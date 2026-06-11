@@ -1,0 +1,6 @@
+{
+  "name": "Pantau Perwalian",
+  "description": "Aplikasi pantau kehadiran dan kegiatan harian siswa perwalian oleh guru wali kelas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
