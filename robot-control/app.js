@@ -43,7 +43,26 @@ function log(msg){const t=new Date().toLocaleTimeString('id-ID');state.events.un
 function renderLog(){const html=state.events.map(x=>'<div class="log-item">'+x+'</div>').join('')||'<div class="muted small">Belum ada event.</div>'; $('#commandLog').innerHTML=html; $('#telemetryLog').innerHTML=html; $('#logCount').textContent=state.events.length+' event';}
 function setConnection(on){state.connected=on; $('#statusText').textContent=on?'Terhubung':'Demo / Offline'; $('#statusDot').style.background=on?'var(--accent)':'var(--danger)'; $('#connectionPill').textContent=on?'ONLINE':'OFFLINE'; $('#connectBtn').textContent=on?'Putuskan':'Hubungkan Robot'; if(on)log('Koneksi robot aktif');else log('Koneksi diputus');}
 function command(cmd){state.last=cmd;$('#lastCommand').textContent=cmd;$('#directionBadge').textContent=cmd; $('#modeValue').textContent=state.mode; const pwm=Math.round(state.speed*2.55); $('#leftMotor').textContent=(cmd==='LEFT'?0:cmd==='RIGHT'?state.speed:cmd==='STOP'?0:state.speed)+'%'; $('#rightMotor').textContent=(cmd==='RIGHT'?0:cmd==='LEFT'?state.speed:cmd==='STOP'?0:state.speed)+'%'; log('CMD '+cmd+' • PWM '+pwm); sendToRobot({command:cmd,speed:state.speed});}
-async function sendToRobot(payload){if(!state.connected)return;const host=$('#hostInput').value.trim();const port=$('#portInput').value;const protocol=$('#protocolInput').value;try{if(protocol==='HTTP'){await fetch('http://'+host+':'+port+'/api/command',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}else{window.robotSocket=window.robotSocket||new WebSocket('ws://'+host+':'+port);if(window.robotSocket.readyState===1)window.robotSocket.send(JSON.stringify(payload));}}catch(e){log('Gagal kirim: '+e.message);}}
+async function sendToRobot(payload){
+  if(!state.connected)return;
+  const host=$('#hostInput').value.trim();
+  const port=$('#portInput').value;
+  const protocol=$('#protocolInput').value;
+  // Same-origin mode: when this dashboard is served by the ESP32/local gateway,
+  // use relative /api endpoints and avoid browser mixed-content restrictions.
+  const sameOrigin = location.protocol.startsWith('http') && (location.hostname===host || !host);
+  try{
+    if(protocol==='HTTP'){
+      const url = sameOrigin ? '/api/command' : 'http://'+host+':'+port+'/api/command';
+      await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),mode:'cors'});
+    }else{
+      const scheme = location.protocol==='https:' ? 'wss://' : 'ws://';
+      const url = sameOrigin ? scheme+location.host : 'ws://'+host+':'+port;
+      window.robotSocket=window.robotSocket||new WebSocket(url);
+      if(window.robotSocket.readyState===1)window.robotSocket.send(JSON.stringify(payload));
+    }
+  }catch(e){log('Gagal kirim: '+e.message);}
+}
 function go(tab){$$('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));$$('.tab').forEach(x=>x.classList.toggle('active',x.id==='tab-'+tab));const titles={dashboard:'Dashboard Robot',control:'Kontrol Robot',program:'Program Arduino',telemetry:'Monitoring',settings:'Koneksi Perangkat'};$('#pageTitle').textContent=titles[tab]||'Robot Control Center';}
 $$('.nav-item').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab))); $$('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
 $('#connectBtn').addEventListener('click',()=>setConnection(!state.connected)); $('#emergencyStop').addEventListener('click',()=>command('STOP'));
