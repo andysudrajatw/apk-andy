@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robot Control Center</title>
+<meta name="description" content="Dashboard web untuk kontrol dan monitoring mobil robot Arduino/ESP32">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">🤖</div><div><strong>ROBOT</strong><span>CONTROL CENTER</span></div></div>
+    <nav>
+      <button class="nav-item active" data-tab="dashboard">⌂ <span>Dashboard</span></button>
+      <button class="nav-item" data-tab="control">◈ <span>Kontrol Robot</span></button>
+      <button class="nav-item" data-tab="program">⌘ <span>Program Arduino</span></button>
+      <button class="nav-item" data-tab="telemetry">◉ <span>Monitoring</span></button>
+      <button class="nav-item" data-tab="settings">⚙ <span>Koneksi</span></button>
+    </nav>
+    <div class="connection-card">
+      <div class="label">STATUS KONEKSI</div>
+      <div class="status-row"><i id="statusDot"></i><span id="statusText">Demo / Offline</span></div>
+      <button id="connectBtn" class="btn btn-primary full">Hubungkan Robot</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div><div class="eyebrow">MOBILE ROBOT • ARDUINO</div><h1 id="pageTitle">Dashboard Robot</h1></div>
+      <div class="top-actions"><span class="pill" id="connectionPill">OFFLINE</span><span class="clock" id="clock"></span></div>
+    </header>
+
+    <section id="tab-dashboard" class="tab active">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">ROBOT AKTIF</div>
+          <h2 id="robotName">MOBIL ROBOT 01</h2>
+          <p>Platform kendali dan monitoring untuk Arduino/ESP32. Dashboard ini bisa digunakan dari HP, laptop, atau tablet dalam satu jaringan.</p>
+          <div class="hero-actions"><button class="btn btn-primary" data-goto="control">Mulai Kendali</button><button class="btn btn-secondary" data-goto="program">Buka Program</button></div>
+        </div>
+        <div class="robot-visual"><div class="robot-body"><div class="wheel w1"></div><div class="wheel w2"></div><div class="wheel w3"></div><div class="wheel w4"></div><div class="board">ARDUINO</div><div class="led"></div></div></div>
+      </div>
+
+      <div class="grid four">
+        <div class="metric"><span>Kecepatan</span><strong id="speedValue">0%</strong><small>PWM motor</small></div>
+        <div class="metric"><span>Baterai</span><strong id="batteryValue">92%</strong><small id="voltageValue">11.9 V</small></div>
+        <div class="metric"><span>Jarak</span><strong id="distanceValue">-- cm</strong><small>Ultrasonic</small></div>
+        <div class="metric"><span>Suhu</span><strong id="tempValue">29.4°C</strong><small>Sensor robot</small></div>
+      </div>
+
+      <div class="grid two">
+        <div class="panel">
+          <div class="panel-head"><h3>Perintah Terakhir</h3><span class="muted" id="lastCommand">STOP</span></div>
+          <div id="commandLog" class="log"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Arsitektur Koneksi</h3><span class="badge">READY</span></div>
+          <div class="architecture">
+            <div class="arch-node">WEB APP</div><span>↔</span><div class="arch-node">Wi‑Fi</div><span>↔</span><div class="arch-node">ESP32</div><span>↔</span><div class="arch-node">ARDUINO</div><span>↔</span><div class="arch-node">MOTOR DRIVER</div>
+          </div>
+          <p class="muted small">Gunakan HTTP/WebSocket sesuai perangkat. ESP32 dapat menjadi gateway bila Arduino tidak memiliki Wi‑Fi.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-control" class="tab">
+      <div class="section-head"><div><h2>Kontrol Robot</h2><p class="muted">Kontrol keyboard, tombol layar, dan slider kecepatan.</p></div><button class="danger btn" id="emergencyStop">EMERGENCY STOP</button></div>
+      <div class="control-layout">
+        <div class="panel">
+          <div class="panel-head"><h3>Directional Control</h3><span class="badge" id="directionBadge">STOP</span></div>
+          <div class="joystick" id="joystick">
+            <button class="move up" data-cmd="FORWARD">▲</button>
+            <button class="move left" data-cmd="LEFT">◀</button>
+            <button class="stop" data-cmd="STOP">■</button>
+            <button class="move right" data-cmd="RIGHT">▶</button>
+            <button class="move down" data-cmd="BACKWARD">▼</button>
+          </div>
+          <div class="hint">Keyboard: W/A/S/D atau tombol panah • Spasi = STOP</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Motor & Mode</h3><span class="badge">MANUAL</span></div>
+          <label class="field">Kecepatan motor <output id="speedOutput">60%</output><input id="speedRange" type="range" min="0" max="100" value="60"></label>
+          <div class="mode-grid">
+            <button class="mode active" data-mode="MANUAL">Manual</button><button class="mode" data-mode="AUTONOMOUS">Autonomous</button><button class="mode" data-mode="LINE">Line Follower</button><button class="mode" data-mode="OBSTACLE">Obstacle Avoidance</button>
+          </div>
+          <div class="switch-row"><span>Headlight</span><button class="toggle" id="lightToggle" aria-pressed="false"></button></div>
+          <div class="switch-row"><span>Buzzer</span><button class="toggle" id="buzzerToggle" aria-pressed="false"></button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-program" class="tab">
+      <div class="section-head"><div><h2>Program Arduino</h2><p class="muted">Editor kode sederhana untuk menyiapkan program robot sebelum di-upload ke Arduino.</p></div><div class="inline-actions"><button class="btn btn-secondary" id="saveSketch">Simpan</button><button class="btn btn-primary" id="copySketch">Salin Kode</button></div></div>
+      <div class="program-layout">
+        <div class="panel editor"><div class="editor-head"><span>sketch.ino</span><span id="compileStatus" class="badge">READY</span></div><textarea id="codeEditor" spellcheck="false"></textarea></div>
+        <div class="panel library"><h3>Konfigurasi</h3>
+          <label class="field">Board<select id="boardSelect"><option>Arduino UNO</option><option>Arduino Mega</option><option>ESP32 DevKit V1</option><option>ESP32-CAM</option></select></label>
+          <label class="field">Motor Driver<select><option>L298N</option><option>L9110S</option><option>TB6612FNG</option></select></label>
+          <label class="field">Komunikasi<select><option>Serial / USB</option><option>Wi‑Fi HTTP</option><option>Wi‑Fi WebSocket</option><option>Bluetooth</option></select></label>
+          <button class="btn btn-primary full" id="validateCode">Validasi Program</button>
+          <div class="checklist"><div>✓ Pin motor terdefinisi</div><div>✓ Command handler aktif</div><div>✓ Fail-safe STOP tersedia</div><div>○ Upload ke board (butuh gateway)</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-telemetry" class="tab">
+      <div class="section-head"><div><h2>Monitoring Real-time</h2><p class="muted">Data telemetri yang diterima dari robot.</p></div><button class="btn btn-secondary" id="clearLog">Bersihkan Log</button></div>
+      <div class="grid four"><div class="metric"><span>Motor Kiri</span><strong id="leftMotor">0%</strong></div><div class="metric"><span>Motor Kanan</span><strong id="rightMotor">0%</strong></div><div class="metric"><span>Jarak</span><strong id="distance2">-- cm</strong></div><div class="metric"><span>Mode</span><strong id="modeValue">MANUAL</strong></div></div>
+      <div class="panel"><div class="panel-head"><h3>Event Log</h3><span class="muted" id="logCount">0 event</span></div><div id="telemetryLog" class="log tall"></div></div>
+    </section>
+
+    <section id="tab-settings" class="tab">
+      <div class="section-head"><div><h2>Koneksi Perangkat</h2><p class="muted">Pengaturan endpoint untuk ESP32/Arduino gateway.</p></div></div>
+      <div class="settings-grid">
+        <div class="panel">
+          <h3>Web API / Gateway</h3>
+          <label class="field">IP / Host<input id="hostInput" value="192.168.4.1" placeholder="192.168.4.1"></label>
+          <label class="field">Port<input id="portInput" value="80" type="number"></label>
+          <label class="field">Protocol<select id="protocolInput"><option>HTTP</option><option>WebSocket</option></select></label>
+          <button class="btn btn-primary full" id="saveConnection">Simpan Koneksi</button>
+        </div>
+        <div class="panel">
+          <h3>Kontrak Data</h3>
+          <pre id="apiExample" class="code-box">POST /api/command
+{ "command": "FORWARD", "speed": 60 }</pre>
+          <p class="muted small">Telemetry JSON: <code>{"battery":92,"voltage":11.9,"distance":74,"temperature":29.4,"mode":"MANUAL"}</code></p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="./app.js"></script>
+</body>
+</html>
